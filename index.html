@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Ad Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            padding: 2.5rem; /* p-10 */
+            width: 100%;
+            max-width: 900px;
+        }
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #d1d5db; /* border-gray-300 */
+            border-radius: 0.75rem; /* rounded-lg */
+            padding: 2rem; /* p-8 */
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.2s ease-in-out;
+            margin-bottom: 1.5rem; /* mb-6 */
+        }
+        .file-upload-label:hover {
+            border-color: #9ca3af; /* hover:border-gray-400 */
+        }
+        .ad-format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem; /* mt-6 */
+            margin-bottom: 1.5rem; /* Added margin-bottom */
+        }
+        .ad-format-button {
+            background-color: #e5e7eb; /* bg-gray-200 */
+            color: #374151; /* text-gray-800 */
+            padding: 0.75rem 1rem; /* px-4 py-3 */
+            border-radius: 0.5rem; /* rounded-lg */
+            font-weight: 500; /* font-medium */
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+        }
+        .ad-format-button:hover {
+            background-color: #d1d5db; /* hover:bg-gray-300 */
+            transform: translateY(-1px);
+        }
+        .ad-format-button.selected {
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: #ffffff; /* text-white */
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5), 0 2px 4px -1px rgba(59, 130, 246, 0.25); /* shadow-lg-blue */
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+            display: none; /* Hidden by default */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.error {
+            background-color: #f44336; /* Red */
+        }
+        .product-image-preview, .generated-ad-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.75rem; /* rounded-lg */
+            margin-top: 1rem; /* mt-4 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: block;
+        }
+        .generated-ad-preview {
+            border: 2px solid #3b82f6; /* border-blue-500 */
+        }
+        .slogan-options, .ad-copy-options {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .slogan-input-group, .ad-copy-input-group {
+            flex-grow: 1;
+        }
+        textarea {
+            resize: vertical;
+        }
+        .ai-button {
+            background-color: #10b981; /* bg-emerald-500 */
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .ai-button:hover {
+            background-color: #059669; /* hover:bg-emerald-600 */
+        }
+        .ai-button:disabled {
+            background-color: #a7f3d0; /* bg-emerald-200 */
+            cursor: not-allowed;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        .modal-close-button:hover {
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+    <div class="container mx-auto p-6 bg-white rounded-xl shadow-xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4 text-center">Product Ad Generator</h1>
+        <p class="text-gray-600 mb-6 text-center">Upload your product image, choose an ad format or describe your own, and add a slogan and copy!</p>
+
+        <div class="mb-6">
+            <input type="file" id="imageUpload" accept="image/*" class="hidden">
+            <label for="imageUpload" class="file-upload-label text-gray-500 hover:border-gray-400">
+                <svg class="w-12 h-12 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <span id="uploadText">Click to upload your product image (JPG, PNG)</span>
+            </label>
+            <img id="productImagePreview" src="" alt="Product Image Preview" class="product-image-preview hidden">
+            <button id="generateProductNameDescriptionButton" class="ai-button mt-4" disabled>✨ Generate Product Info</button>
+            <div id="productInfoOutput" class="mt-2 p-3 bg-gray-50 rounded-lg hidden">
+                <p class="font-semibold" id="productNameDisplay"></p>
+                <p class="text-sm text-gray-700" id="productDescriptionDisplay"></p>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Predefined Ad Formats:</h2>
+        <div class="ad-format-grid" id="adFormatButtons">
+            <!-- Ad format buttons will be dynamically inserted here -->
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3 mt-6">Or Describe Your Own:</h2>
+        <div class="mb-6">
+            <input type="text" id="customAdFormatInput" placeholder="e.g., 'a product placement in a futuristic sci-fi movie scene'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3 mt-6">Add a Slogan:</h2>
+        <div class="slogan-options mb-6">
+            <div class="slogan-input-group">
+                <input type="text" id="manualSloganInput" placeholder="Enter your marketing slogan here" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+            </div>
+            <button id="aiGenerateSloganButton" class="ai-button">✨ AI Generate Slogan</button>
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3 mt-6">Add Ad Copy (Optional):</h2>
+        <div class="ad-copy-options mb-6">
+            <div class="ad-copy-input-group">
+                <textarea id="manualAdCopyInput" placeholder="Enter your detailed ad copy here (e.g., key features, benefits)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" rows="3"></textarea>
+            </div>
+            <button id="aiGenerateAdCopyButton" class="ai-button">✨ AI Generate Ad Copy</button>
+        </div>
+
+
+        <button id="generateAdButton" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold text-lg mt-4 mb-2 shadow-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75" disabled>
+            Generate Ad
+        </button>
+        <button id="editAdButton" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold text-lg mb-4 shadow-md hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 hidden">
+            🎨 Edit Generated Ad
+        </button>
+
+        <div id="loadingIndicator" class="loader"></div>
+
+        <div id="generatedAdContainer" class="mt-8 text-center hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Generated Ad</h2>
+            <img id="generatedAdPreview" src="" alt="Generated Ad" class="generated-ad-preview mx-auto">
+        </div>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <!-- Edit Ad Modal -->
+    <div id="editAdModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-button" id="closeEditModalButton">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Edit Ad</h2>
+            <p class="text-gray-600 mb-6 text-center">Describe the changes you want to make to the ad.</p>
+
+            <img id="editAdPreviewImage" src="" alt="Ad to Edit" class="product-image-preview mx-auto mb-4">
+
+            <textarea id="editInstructionsInput" placeholder="e.g., 'make the slogan text bigger and bolder', 'change the background to a sunny beach', 'move the product slightly to the left'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 mb-4" rows="4"></textarea>
+
+            <button id="applyChangesButton" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold text-lg shadow-md hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                Apply Changes
+            </button>
+            <div id="editLoadingIndicator" class="loader"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Global variables for Firebase configuration (will be populated by the environment)
+        var __app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        var __firebase_config = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+        var __initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+
+        // API Key for Gemini (will be provided by the environment)
+        const API_KEY = ""; // Keep as empty string, Canvas will inject it.
+        const GEMINI_IMAGE_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent";
+        const GEMINI_VISION_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"; // For product description
+        const GEMINI_TEXT_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"; // For slogan and ad copy
+
+        let productBase64Image = null;
+        let lastGeneratedAdBase64 = null; // Stores the base64 of the last successfully generated ad for editing
+        let selectedAdFormat = null; // Will store the ID of a predefined format OR 'custom'
+        let customAdFormatText = "";
+        let currentProductName = "";
+        let currentProductDescription = "";
+
+        const adFormats = [
+            { id: 'billboard', name: 'Billboard' },
+            { id: 'newspaper', name: 'Newspaper Ad' },
+            { id: 'bus_stop', name: 'Bus Stop Ad' },
+            { id: 'magazine', name: 'Magazine Ad' },
+            { id: 'social_media', name: 'Social Media Post' },
+            { id: 'website_banner', name: 'Website Banner' },
+            { id: 'tv_commercial_still', name: 'TV Commercial Still' },
+            { id: 'shopping_cart_screen', name: 'Shopping Cart Screen' },
+            { id: 'flyer', name: 'Flyer/Leaflet' },
+            { id: 'digital_signage', name: 'Digital Signage' }
+        ];
+
+        const imageUpload = document.getElementById('imageUpload');
+        const uploadText = document.getElementById('uploadText');
+        const productImagePreview = document.getElementById('productImagePreview');
+        const adFormatButtonsContainer = document.getElementById('adFormatButtons');
+        const customAdFormatInput = document.getElementById('customAdFormatInput');
+        const manualSloganInput = document.getElementById('manualSloganInput');
+        const aiGenerateSloganButton = document.getElementById('aiGenerateSloganButton');
+        const manualAdCopyInput = document.getElementById('manualAdCopyInput');
+        const aiGenerateAdCopyButton = document.getElementById('aiGenerateAdCopyButton');
+        const generateAdButton = document.getElementById('generateAdButton');
+        const editAdButton = document.getElementById('editAdButton'); // New edit button
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const generatedAdContainer = document.getElementById('generatedAdContainer');
+        const generatedAdPreview = document.getElementById('generatedAdPreview');
+        const messageBox = document.getElementById('messageBox');
+        const generateProductNameDescriptionButton = document.getElementById('generateProductNameDescriptionButton');
+        const productInfoOutput = document.getElementById('productInfoOutput');
+        const productNameDisplay = document.getElementById('productNameDisplay');
+        const productDescriptionDisplay = document.getElementById('productDescriptionDisplay');
+
+        // Modal elements
+        const editAdModal = document.getElementById('editAdModal');
+        const closeEditModalButton = document.getElementById('closeEditModalButton');
+        const editAdPreviewImage = document.getElementById('editAdPreviewImage');
+        const editInstructionsInput = document.getElementById('editInstructionsInput');
+        const applyChangesButton = document.getElementById('applyChangesButton');
+        const applyChangesButtonOriginalText = applyChangesButton.textContent; // Store original text
+        const editLoadingIndicator = document.getElementById('editLoadingIndicator');
+
+
+        // Function to show custom message box
+        function showMessageBox(message, isError = false) {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box';
+            if (isError) {
+                messageBox.classList.add('error');
+            }
+            messageBox.style.display = 'block';
+            messageBox.style.opacity = 1;
+
+            setTimeout(() => {
+                messageBox.style.opacity = 0;
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 300);
+            }, 3000);
+        }
+
+        // Deselect all predefined format buttons and clear custom input selection
+        function deselectAllFormats() {
+            document.querySelectorAll('.ad-format-button').forEach(btn => btn.classList.remove('selected'));
+            customAdFormatInput.classList.remove('selected'); // Visually deselect if it was selected
+            selectedAdFormat = null;
+            customAdFormatText = ""; // Clear custom text when a predefined is chosen
+        }
+
+        // Initialize ad format buttons
+        adFormats.forEach(format => {
+            const button = document.createElement('button');
+            button.className = 'ad-format-button';
+            button.textContent = format.name;
+            button.dataset.id = format.id;
+            button.addEventListener('click', () => {
+                deselectAllFormats(); // Deselect other formats
+                button.classList.add('selected');
+                selectedAdFormat = format.id;
+                customAdFormatInput.value = ""; // Clear custom input when a predefined is selected
+                updateGenerateButtonState();
+            });
+            adFormatButtonsContainer.appendChild(button);
+        });
+
+        // Event listener for custom ad format input
+        customAdFormatInput.addEventListener('input', (event) => {
+            const currentText = event.target.value.trim();
+            if (currentText.length > 0) {
+                deselectAllFormats(); // Deselect predefined formats
+                selectedAdFormat = 'custom'; // Indicate custom format is in use
+                customAdFormatText = currentText;
+                customAdFormatInput.classList.add('selected'); // Optional: Add a visual cue for selection
+            } else {
+                selectedAdFormat = null;
+                customAdFormatText = "";
+                customAdFormatInput.classList.remove('selected');
+            }
+            updateGenerateButtonState(); // Ensure state is updated when custom input changes
+        });
+
+        // Event listeners for slogan and ad copy inputs
+        manualSloganInput.addEventListener('input', () => {
+            updateGenerateButtonState();
+        });
+
+        manualAdCopyInput.addEventListener('input', () => {
+            updateGenerateButtonState();
+        });
+        
+        // --- New Feature: Generate Product Name and Description ---
+        generateProductNameDescriptionButton.addEventListener('click', async () => {
+            if (!productBase64Image) {
+                showMessageBox('Please upload a product image first to generate info.', true);
+                return;
+            }
+
+            generateProductNameDescriptionButton.disabled = true;
+            generateProductNameDescriptionButton.textContent = 'Generating...';
+            productInfoOutput.classList.add('hidden'); // Hide previous output
+
+            try {
+                const promptText = "Analyze this image and provide a concise product name (max 3 words) and a brief product description (max 20 words) in JSON format: { \"name\": \"Product Name\", \"description\": \"Product description.\" }";
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: promptText },
+                            {
+                                inlineData: {
+                                    mimeType: "image/png",
+                                    data: productBase64Image
+                                }
+                            }
+                        ]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "name": { "type": "STRING" },
+                                "description": { "type": "STRING" }
+                            }
+                        }
+                    }
+                };
+
+                const response = await fetch(`${GEMINI_VISION_API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    const errorMessage = result.error?.message || `API error: ${response.statusText} (Status: ${response.status})`;
+                    console.error("Error generating product info:", errorMessage);
+                    showMessageBox(`Error generating product info: ${errorMessage}`, true);
+                    return;
+                }
+
+                const jsonString = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                const parsedInfo = JSON.parse(jsonString);
+
+                currentProductName = parsedInfo.name || "Untitled Product";
+                currentProductDescription = parsedInfo.description || "A wonderful new product.";
+
+                productNameDisplay.textContent = `Name: ${currentProductName}`;
+                productDescriptionDisplay.textContent = `Description: ${currentProductDescription}`;
+                productInfoOutput.classList.remove('hidden');
+                showMessageBox('Product info generated successfully!');
+
+            } catch (error) {
+                console.error("Error generating product info:", error);
+                showMessageBox(`Error generating product info: ${error.message}`, true);
+            } finally {
+                generateProductNameDescriptionButton.disabled = false;
+                generateProductNameDescriptionButton.textContent = '✨ Generate Product Info';
+                updateGenerateButtonState();
+            }
+        });
+
+
+        // --- New Feature: AI Generate Slogan ---
+        aiGenerateSloganButton.addEventListener('click', async () => {
+            if (!productBase64Image) {
+                showMessageBox('Please upload a product image first to generate a slogan.', true);
+                return;
+            }
+
+            aiGenerateSloganButton.disabled = true;
+            aiGenerateSloganButton.textContent = 'Generating...';
+
+            try {
+                const productContext = currentProductDescription || "a product";
+                const systemPrompt = "You are a creative marketing expert. Generate a concise, catchy, and compelling marketing slogan for a product. The slogan should be suitable for an advertisement. Provide only the slogan text, no other formatting or text.";
+                const userQuery = `Generate a marketing slogan for a product described as: "${productContext}". Keep it short and impactful, under 10 words.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                const response = await fetch(`${GEMINI_TEXT_API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    const errorMessage = result.error?.message || `API error: ${response.statusText} (Status: ${response.status})`;
+                    console.error("Error generating slogan:", errorMessage);
+                    if (response.status === 401) {
+                        showMessageBox(`Error generating slogan: Unauthorized. Check API key.`, true);
+                    } else {
+                        showMessageBox(`Error generating slogan: ${errorMessage}`, true);
+                    }
+                    manualSloganInput.value = "Your Brand, Your Style.";
+                    return;
+                }
+                
+                const slogan = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                manualSloganInput.value = slogan ? slogan.replace(/"/g, '').trim() : "Your Brand, Your Style.";
+                showMessageBox('Slogan generated successfully!');
+
+            } catch (error) {
+                console.error("Error generating slogan:", error);
+                showMessageBox(`Error generating slogan: ${error.message}`, true);
+                manualSloganInput.value = "Your Brand, Your Style.";
+            } finally {
+                aiGenerateSloganButton.disabled = false;
+                aiGenerateSloganButton.textContent = '✨ AI Generate Slogan';
+                updateGenerateButtonState();
+            }
+        });
+
+
+        // --- New Feature: AI Generate Ad Copy ---
+        aiGenerateAdCopyButton.addEventListener('click', async () => {
+            if (!productBase64Image) {
+                showMessageBox('Please upload a product image first to generate ad copy.', true);
+                return;
+            }
+            if (!manualSloganInput.value.trim()) {
+                showMessageBox('Please generate or enter a slogan first for better ad copy.', true);
+                return;
+            }
+
+            aiGenerateAdCopyButton.disabled = true;
+            aiGenerateAdCopyButton.textContent = 'Generating...';
+
+            try {
+                const productContext = currentProductDescription || "a product";
+                const sloganUsed = manualSloganInput.value.trim();
+                const adFormatContext = customAdFormatText || adFormats.find(f => f.id === selectedAdFormat)?.name || "a generic advertisement";
+
+                const systemPrompt = "You are a creative marketing expert. Generate a short, persuasive, and engaging ad copy (2-3 sentences) for a product. The copy should highlight benefits and be suitable for an advertisement. Provide only the ad copy text, no other formatting or text.";
+                const userQuery = `Generate ad copy for a product described as: "${productContext}". The slogan is "${sloganUsed}". The ad format is for "${adFormatContext}". Focus on benefits and engagement.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                const response = await fetch(`${GEMINI_TEXT_API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    const errorMessage = result.error?.message || `API error: ${response.statusText} (Status: ${response.status})`;
+                    console.error("Error generating ad copy:", errorMessage);
+                    if (response.status === 401) {
+                        showMessageBox(`Error generating ad copy: Unauthorized. Check API key.`, true);
+                    } else {
+                        showMessageBox(`Error generating ad copy: ${errorMessage}`, true);
+                    }
+                    manualAdCopyInput.value = "Experience the difference with our amazing product!";
+                    return;
+                }
+                
+                const adCopy = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                manualAdCopyInput.value = adCopy ? adCopy.trim() : "Experience the difference with our amazing product!";
+                showMessageBox('Ad copy generated successfully!');
+
+            } catch (error) {
+                console.error("Error generating ad copy:", error);
+                showMessageBox(`Error generating ad copy: ${error.message}`, true);
+                manualAdCopyInput.value = "Experience the difference with our amazing product!";
+            } finally {
+                aiGenerateAdCopyButton.disabled = false;
+                aiGenerateAdCopyButton.textContent = '✨ AI Generate Ad Copy';
+                updateGenerateButtonState();
+            }
+        });
+
+
+        // Update the state of the generate button and edit button
+        function updateGenerateButtonState() {
+            const isCustomTextValid = selectedAdFormat === 'custom' && customAdFormatText.length > 0;
+            const isPredefinedSelected = selectedAdFormat !== null && selectedAdFormat !== 'custom';
+            const hasSloganInput = manualSloganInput.value.trim().length > 0;
+            // Ad copy is now optional, so no direct check here for `hasAdCopyInput`
+
+            // Enable Generate Ad button only if image, format, AND slogan are present (Ad Copy is optional)
+            const canGenerate = productBase64Image && (isPredefinedSelected || isCustomTextValid) && hasSloganInput;
+            generateAdButton.disabled = !canGenerate;
+
+            // Enable Product Info button only if image is uploaded
+            generateProductNameDescriptionButton.disabled = !productBase64Image;
+
+            // Show/hide and enable/disable Edit Ad button based on whether an ad has been generated
+            if (lastGeneratedAdBase64) {
+                editAdButton.classList.remove('hidden');
+                editAdButton.disabled = false; // Explicitly enable the edit button
+            } else {
+                editAdButton.classList.add('hidden');
+                editAdButton.disabled = true; // Explicitly disable if no ad
+            }
+        }
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                uploadText.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    productImagePreview.src = e.target.result;
+                    productImagePreview.classList.remove('hidden');
+                    productBase64Image = e.target.result.split(',')[1];
+                    updateGenerateButtonState();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadText.textContent = 'Click to upload your product image (JPG, PNG)';
+                productImagePreview.classList.add('hidden');
+                productImagePreview.src = '';
+                productBase64Image = null;
+                currentProductName = "";
+                currentProductDescription = "";
+                productNameDisplay.textContent = "";
+                productDescriptionDisplay.textContent = "";
+                productInfoOutput.classList.add('hidden');
+                lastGeneratedAdBase64 = null; // Reset last generated ad on new product upload
+                updateGenerateButtonState();
+            }
+        });
+
+
+        generateAdButton.addEventListener('click', async () => {
+            if (!productBase64Image || (!selectedAdFormat && customAdFormatText.length === 0)) {
+                showMessageBox('Please upload a product image and select an ad format or describe a custom one.', true);
+                return;
+            }
+            if (!manualSloganInput.value.trim()) {
+                showMessageBox('Please provide a marketing slogan.', true);
+                return;
+            }
+            // Ad copy is now optional, so we don't return if it's empty here.
+
+            generateAdButton.disabled = true;
+            editAdButton.disabled = true; // Disable edit button during new generation
+            loadingIndicator.style.display = 'block';
+            generatedAdContainer.classList.add('hidden');
+            editAdButton.classList.add('hidden'); // Hide edit button until new ad is ready
+
+            const adDescriptionMap = {
+                'billboard': 'a large outdoor billboard advertisement. Make the product the focal point.',
+                'newspaper': 'a newspaper advertisement in black and white. Make the product visible within the text-heavy context.',
+                'bus_stop': 'a bus stop advertisement. Integrate the product with a street-level scene, potentially with reflections on glass.',
+                'magazine': 'a glossy magazine advertisement. Position the product prominently in a fashion-oriented or lifestyle scene.',
+                'social_media': 'a social media post (like Instagram/Facebook). Frame the product with engagement elements (e.g., likes, comments).',
+                'website_banner': 'a clean, digital website banner advertisement. Integrate the product seamlessly into a web layout.',
+                'tv_commercial_still': 'a vibrant TV commercial still. Show the product in a dynamic, high-quality product shot focus.',
+                'shopping_cart_screen': 'an e-commerce shopping cart screen advertisement. Place the product within a checkout context.',
+                'flyer': 'a handheld flyer or leaflet. Display the product on a textured background as if printed.',
+                'digital_signage': 'a modern digital signage display inside a store. Present the product on a bright, contemporary screen.'
+            };
+
+            let adFormatDescription = "";
+            if (selectedAdFormat === 'custom') {
+                adFormatDescription = customAdFormatText;
+            } else {
+                adFormatDescription = adDescriptionMap[selectedAdFormat];
+            }
+            
+            const sloganToUse = manualSloganInput.value.trim();
+            const adCopyToUse = manualAdCopyInput.value.trim(); // Get ad copy if present
+
+            let promptText = `Take this product image and place it realistically into ${adFormatDescription}. Prominently display the marketing slogan "${sloganToUse}"`;
+            if (adCopyToUse) { // Conditionally add ad copy to prompt if it exists
+                promptText += ` and the ad copy "${adCopyToUse}"`;
+            }
+            promptText += ` within the advertisement. The text should be clearly visible and well-integrated into the ad design.`;
+
+
+            try {
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: promptText },
+                            {
+                                inlineData: {
+                                    mimeType: "image/png",
+                                    data: productBase64Image
+                                }
+                            }
+                        ]
+                    }],
+                    generationConfig: {
+                        responseModalities: ['TEXT', 'IMAGE']
+                    },
+                };
+
+                const response = await fetch(`${GEMINI_IMAGE_API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const errorMessage = result.error?.message || `API error: ${response.statusText}`;
+                    throw new Error(errorMessage);
+                }
+                
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (base64Data) {
+                    generatedAdPreview.src = `data:image/png;base64,${base64Data}`;
+                    generatedAdContainer.classList.remove('hidden');
+                    lastGeneratedAdBase64 = base64Data; // Store the generated ad for editing
+                    showMessageBox('Ad generated successfully! You can now edit it.');
+                } else {
+                    showMessageBox('Failed to generate ad: No image data received from API.', true);
+                }
+            } catch (error) {
+                console.error("Error generating ad:", error);
+                showMessageBox(`Error generating ad: ${error.message}`, true);
+            } finally {
+                generateAdButton.disabled = false;
+                loadingIndicator.style.display = 'none';
+                updateGenerateButtonState(); // Re-evaluate button states
+            }
+        });
+
+        // --- New Feature: Edit Ad ---
+        editAdButton.addEventListener('click', () => {
+            if (lastGeneratedAdBase64) {
+                editAdPreviewImage.src = `data:image/png;base64,${lastGeneratedAdBase64}`;
+                editAdModal.classList.add('show');
+                editInstructionsInput.value = ''; // Clear previous instructions
+                editLoadingIndicator.style.display = 'none'; // Hide loader
+                applyChangesButton.disabled = false; // Ensure button is enabled when modal opens
+                applyChangesButton.textContent = applyChangesButtonOriginalText; // Reset text
+            } else {
+                showMessageBox('No ad has been generated yet to edit.', true);
+            }
+        });
+
+        closeEditModalButton.addEventListener('click', () => {
+            editAdModal.classList.remove('show');
+        });
+
+        applyChangesButton.addEventListener('click', async () => {
+            const instructions = editInstructionsInput.value.trim();
+
+            if (!instructions) {
+                showMessageBox('Please enter instructions for editing the ad.', true);
+                return;
+            }
+            if (!lastGeneratedAdBase64) {
+                showMessageBox('No ad found to edit. Please generate one first.', true);
+                return;
+            }
+
+            // UI Feedback for "Applying Changes"
+            applyChangesButton.disabled = true;
+            applyChangesButton.textContent = 'Applying Changes...';
+            editLoadingIndicator.style.display = 'block';
+            showMessageBox('Applying changes to your ad...', false); // Immediate feedback
+
+            try {
+                const promptText = `Modify the provided ad image based on these instructions: "${instructions}". Make the changes subtly and realistically while maintaining the ad's context.`;
+
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: promptText },
+                            {
+                                inlineData: {
+                                    mimeType: "image/png",
+                                    data: lastGeneratedAdBase64 // Use the last generated ad as input
+                                }
+                            }
+                        ]
+                    }],
+                    generationConfig: {
+                        responseModalities: ['TEXT', 'IMAGE']
+                    },
+                };
+
+                const response = await fetch(`${GEMINI_IMAGE_API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const errorMessage = result.error?.message || `API error: ${response.statusText}`;
+                    throw new Error(errorMessage);
+                }
+                
+                const editedAdBase64 = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (editedAdBase64) {
+                    generatedAdPreview.src = `data:image/png;base64,${editedAdBase64}`; // Update main preview
+                    lastGeneratedAdBase64 = editedAdBase64; // Update stored ad for further edits
+                    editAdPreviewImage.src = `data:image/png;base64,${editedAdBase64}`; // Update modal preview
+                    showMessageBox('Ad tweaked successfully!');
+                    editAdModal.classList.remove('show'); // Close modal on success
+                } else {
+                    showMessageBox('Failed to tweak ad: No image data received from API.', true);
+                }
+
+            } catch (error) {
+                console.error("Error applying ad tweaks:", error);
+                showMessageBox(`Error applying ad tweaks: ${error.message}`, true);
+            } finally {
+                applyChangesButton.disabled = false;
+                applyChangesButton.textContent = applyChangesButtonOriginalText; // Reset button text
+                editLoadingIndicator.style.display = 'none';
+            }
+        });
+
+
+        // Initial state update
+        updateGenerateButtonState();
+    </script>
+</body>
+</html>
